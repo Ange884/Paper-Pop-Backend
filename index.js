@@ -525,7 +525,7 @@ else if (templateId === "kwibuka") {
 }
 const browser = await puppeteer.launch({
   headless: true, // "new" also works, but true is fine
-  executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome',
+  executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome-stable',
   args: ["--no-sandbox", "--disable-setuid-sandbox"],
 });
 
