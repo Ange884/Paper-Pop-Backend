@@ -1,8 +1,11 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 const app = express();
 
@@ -521,9 +524,11 @@ else if (templateId === "kwibuka") {
   return res.status(400).json({ error: "Invalid templateId" });
 }
 const browser = await puppeteer.launch({
-  headless: "new",
+  headless: true, // "new" also works, but true is fine
+  executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome',
   args: ["--no-sandbox", "--disable-setuid-sandbox"],
 });
+
 
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123 });
