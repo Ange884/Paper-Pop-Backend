@@ -17,6 +17,6 @@
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "nodemon": "^3.1.11",
-    "puppeteer-core": "^24.37.2"
+    "puppeteer": "^24.2.0"
   }
 }

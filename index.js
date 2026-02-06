@@ -1,5 +1,5 @@
 const express = require("express");
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
@@ -285,21 +285,19 @@ function getKwibukaTemplate(data) {
         <div class="family-name">Imena Family</div>
 
         <div class="date-container">
-          ${
-            date
-              .split(/[/\-.]/)
-              .map(
-                (part, i, arr) => `
+          ${date
+      .split(/[/\-.]/)
+      .map(
+        (part, i, arr) => `
                   <span>${part.trim()}</span>
-                  ${
-                    i < arr.length - 1
-                      ? '<span class="date-separator">/</span>'
-                      : ''
-                  }
-                `
-              )
-              .join("")
+                  ${i < arr.length - 1
+            ? '<span class="date-separator">/</span>'
+            : ''
           }
+                `
+      )
+      .join("")
+    }
         </div>
 
         <div class="date-underline"></div>
@@ -483,77 +481,77 @@ function getEventTemplate(data) {
 
 
 app.post("/generate-pdf", async (req, res) => {
-  try {
-    const data = req.body;
-    const { templateId } = data;
+  try {
+    const data = req.body;
+    const { templateId } = data;
 
-    let html = "";
+    let html = "";
 
-    if (templateId === "birthday") {
-      html = getBirthdayTemplate(data);
-    } 
+    if (templateId === "birthday") {
+      html = getBirthdayTemplate(data);
+    }
     else if (templateId === "event") {
-  html = getEventTemplate(data);
-}
-else if (templateId === "kwibuka") {
-      const publicDir = path.join(__dirname, "public");
+      html = getEventTemplate(data);
+    }
+    else if (templateId === "kwibuka") {
+      const publicDir = path.join(__dirname, "public");
 
-      const imenaBase64 = fs.readFileSync(
-        path.join(publicDir, "IMENA.png"),
-        "base64"
-      );
+      const imenaBase64 = fs.readFileSync(
+        path.join(publicDir, "IMENA.png"),
+        "base64"
+      );
 
-      const kwibukaBase64 = fs.readFileSync(
-        path.join(publicDir, "kwibuka.png"),
-        "base64"
-      );
+      const kwibukaBase64 = fs.readFileSync(
+        path.join(publicDir, "kwibuka.png"),
+        "base64"
+      );
 
-      const kwibukaBgBase64 = fs.readFileSync(
-        path.join(publicDir, "kwibuka-bg.jpeg"),
-        "base64"
-      );
+      const kwibukaBgBase64 = fs.readFileSync(
+        path.join(publicDir, "kwibuka-bg.jpeg"),
+        "base64"
+      );
 
-      html = getKwibukaTemplate({
-        ...data,
-        imenaLogo: `data:image/png;base64,${imenaBase64}`,
-        kwibukaIcon: `data:image/png;base64,${kwibukaBase64}`,
-        kwibukaBg: `data:image/jpeg;base64,${kwibukaBgBase64}`,
-      });
-    }
- else {
-  return res.status(400).json({ error: "Invalid templateId" });
-}
-const browser = await puppeteer.launch({
-  headless: true, // "new" also works, but true is fine
-  executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome-stable',
-  args: ["--no-sandbox", "--disable-setuid-sandbox"],
-});
+      html = getKwibukaTemplate({
+        ...data,
+        imenaLogo: `data:image/png;base64,${imenaBase64}`,
+        kwibukaIcon: `data:image/png;base64,${kwibukaBase64}`,
+        kwibukaBg: `data:image/jpeg;base64,${kwibukaBgBase64}`,
+      });
+    }
+    else {
+      return res.status(400).json({ error: "Invalid templateId" });
+    }
+    const browser = await puppeteer.launch({
+      headless: true,
+      // executablePath is removed so puppeteer uses its bundled browser
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
 
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: 794, height: 1123 });
-    await page.setContent(html, {  waitUntil: "networkidle2", timeout: 0 });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 794, height: 1123 });
+    await page.setContent(html, { waitUntil: "networkidle2", timeout: 0 });
 
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-    });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
 
-    await browser.close();
+    await browser.close();
 
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${templateId}-invitation.pdf"`,
-    });
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${templateId}-invitation.pdf"`,
+    });
 
-    res.send(pdfBuffer);
+    res.send(pdfBuffer);
 
-  } catch (error) {
-    console.error("PDF generation error:", error);
-    res.status(500).json({ error: "Failed to generate PDF" });
-  }
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    res.status(500).json({ error: "Failed to generate PDF" });
+  }
 });
 
 app.listen(5000, () => {
-  console.log("Server running on port 5000");
+  console.log("Server running on port 5000");
 });
