@@ -9,6 +9,7 @@ dotenv.config();
 
 const app = express();
 
+//Specifiying cors origins
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "OPTIONS"],
@@ -18,116 +19,119 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 function getBirthdayTemplate(data) {
-  const { name, message, image } = data;
+  const { name, message, image, birthdayBg, birthdayLogo } = data;
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Great+Vibes&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
       <style>
         body {
           margin: 0;
           padding: 0;
-          background-color: #45291B;
-          font-family: 'Playfair Display', serif;
-          color: white;
           width: 794px;
           height: 1123px;
+          background: url('${birthdayBg}') center center / cover no-repeat;
+          font-family: 'Pinyon Script', cursive;
           display: flex;
           flex-direction: column;
           align-items: center;
-          overflow: hidden;
           position: relative;
+          color: black;
         }
 
-        .banner-container {
-          position: absolute;
-          top: -20px;
-          left: -5%;
-          width: 110%;
-          display: flex;
-          justify-content: center;
-          gap: 2px;
-          z-index: 1;
+        .logo-container {
+            margin-top: 20px; /* Reduced from 40px */
+            margin-bottom: 10px; /* Reduced from 20px */
         }
 
-        .flag {
-          width: 70px;
-          height: 100px;
-          clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
-          margin: 0 2px;
+        .logo {
+            width: 300px; /* Compromise: 400px is likely too big, reduced slightly to fit, but kept large */
+            height: auto;
+            max-height: 200px; /* prevent it from taking too much vertical space if aspect ratio is tall */
+            object-fit: contain; 
         }
 
-        .flag:nth-child(1) {
-          background-color: #F1C98E;
+        /* Polaroid Card Frame */
+        .polaroid-card {
+            background-color: #F8F8F8; 
+            width: 480px; 
+            padding: 15px 15px 40px 15px; /* Compact padding */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: rotate(-2deg);
+            position: relative;
         }
 
-        .header {
-          margin-top: 130px;
-          text-align: center;
-          z-index: 10;
+        .top-text {
+            font-size: 50px; 
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1;
+            font-family: 'Pinyon Script', cursive;
         }
 
-        .header .happy {
-          font-size: 36px;
-          letter-spacing: 0.4em;
-          text-transform: uppercase;
-          margin-bottom: -15px;
+        .photo-container {
+            width: 100%;
+            height: 380px; /* Reduced height to strict fit */
+            background-color: #333;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .header .birthday {
-          font-family: 'Great Vibes', cursive;
-          font-size: 110px;
-          margin: 0;
-          line-height: 1;
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .header .recipient-name {
-          font-family: 'Great Vibes', cursive;
-          font-size: 60px;
-          color: white;
-          margin-top: -15px;
+        .recipient-name {
+            font-size: 56px;
+            margin-top: 25px;
+            text-align: center;
+            line-height: 1;
+            font-family: 'Pinyon Script', cursive;
         }
 
-        .photo-frame {
-          margin-top: 25px;
-          background: white;
-          padding: 18px;
-          padding-bottom: 70px;
-          transform: rotate(-1deg);
-          width: 440px;
-          z-index: 5;
-        }
-
-        .photo-frame img {
-          width: 100%;
-          height: 480px;
-          object-fit: cover;
-        }
-
-        .personal-message {
-          margin-top: 40px;
-          width: 80%;
-          text-align: center;
-          font-size: 22px;
-          font-style: italic;
+        .message-container {
+            margin-top: 40px;
+            width: 80%;
+            text-align: center;
+            font-family: 'Pinyon Script', cursive; /* Applied explicitly as requested */
+            font-size: 24px; /* Increased for script readability */
+            color: #FFFFF0;
+            /* text-transform: uppercase; Script usually looks bad in all caps */
+            letter-spacing: 1px;
+            line-height: 1.4;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-weight: 400;
         }
       </style>
     </head>
 
     <body>
-      <div class="header">
-        <div class="happy">Happy</div>
-        <h1 class="birthday">Birthday</h1>
+      <div class="logo-container">
+        <img src="${birthdayLogo}" class="logo" alt="Logo">
+      </div>
+
+      <div class="polaroid-card">
+        <div class="top-text">Happy Birthday!</div>
+        
+        <div class="photo-container">
+            <img src="${image}" alt="Moment">
+        </div>
+
         <div class="recipient-name">${name}</div>
       </div>
 
-      <div class="photo-frame">
-        <img src="${image}" alt="Moment">
+      <div class="message-container">
+        ${message}
       </div>
-
-      <div class="personal-message">${message}</div>
     </body>
     </html>
   `;
@@ -315,168 +319,177 @@ function getKwibukaTemplate(data) {
 }
 function getEventTemplate(data) {
   const {
-    eventDate,
     eventDay,
+    eventDate, // Added missing field
     hostingFamily,
     location,
-    imenaLogo,
-    beigeBg
+    eventBg,
+    eventLogo
   } = data;
 
-  // Parse eventDay field (e.g., "7 May 2025" or "12th January 2026")
-  const dateParts = eventDay.trim().split(/\s+/);
-
-  // Handle formats like "7 May 2025" or "7th May 2025"
-  const dayRaw = dateParts[0] || "1";
-  const day = dayRaw.replace(/\D/g, "") || "1"; // remove st/nd/rd/th
-  const month = (dateParts[1] || "January").toUpperCase();
-  const year = dateParts[2] || "2025";
+  // Try to determine the day of the week
+  let weekday = "Saturday"; // Default
+  try {
+    const dateObj = new Date(eventDay);
+    if (!isNaN(dateObj.getTime())) {
+      weekday = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+    }
+  } catch (e) {
+    console.error("Error parsing date for weekday:", e);
+  }
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@700&family=Pinyon+Script&display=swap" rel="stylesheet">
       <style>
         body {
           margin: 0;
           padding: 0;
-          background: url('${beigeBg}') center center / cover no-repeat;
-          font-family: 'Crimson Pro', serif;
-          color: #5D707C;
           width: 794px;
           height: 1123px;
+          background: url('${eventBg}') center center / cover no-repeat;
+          font-family: 'Pinyon Script', cursive; /* Applied globally as requested */
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          overflow: hidden;
           position: relative;
+          color: white;
         }
 
-        .card-arch {
-          background: white;
-          width: 620px;
-          height: 850px;
-          border-radius: 310px 310px 0 0;
+        .overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.65);
+          z-index: 1;
+        }
+
+        .content {
+          z-index: 2;
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding-top: 40px;
+          width: 100%;
           text-align: center;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+          position: relative; /* Context for absolute positioning if needed */
+        }
+
+        .logo-container {
+            margin-bottom: 50px;
         }
 
         .logo {
-          width: 350px;
-          margin-bottom: 10px;
-        }
-
-        .event-title {
-          font-family: 'Playfair Display', serif;
-          font-style: italic;
-          font-size: 64px;
-          line-height: 1;
-          margin: 0 0 25px 0;
-          color: #5D707C;
-        }
-        .event-title span {
+          width: 280px; /* Doubled from 140px */
+          height: auto;
           display: block;
         }
 
-        .hosted-by {
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          font-size: 16px;
-          margin-bottom: 35px;
-          font-weight: 400;
-          color: #5D707C;
+        .main-title {
+          /* font-family: 'Pinyon Script', cursive; Inherited from body */
+          font-size: 110px;
+          color: #D4AF37; /* Gold */
+          margin: 0;
+          line-height: 1;
+          letter-spacing: 2px;
+          margin-bottom: 10px;
         }
 
-        .date-section {
+        .subtitle-wrapper {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 20px;
-          width: 80%;
+          width: 100%;
+          margin-top: 20px;
           margin-bottom: 30px;
         }
 
-        .date-divider {
-          height: 1px;
-          background: #5D707C;
-          flex: 1;
-          opacity: 0.8;
-          margin: 4px 0;
+        .line {
+          width: 150px;
+          height: 2px;
+          background-color: rgba(255, 255, 255, 0.8);
+          margin: 0 20px;
         }
 
-        .month-year {
-          text-transform: uppercase;
-          letter-spacing: 0.25em;
-          font-size: 14px;
-          padding: 0 10px;
-        }
-
-        .day-big {
-          font-family: 'Playfair Display', serif;
-          font-style: italic;
-          font-size: 80px;
-          color: #5D707C;
-          line-height: 0.8;
-        }
-
-        .miss-out {
-          font-size: 18px;
-          margin-bottom: 30px;
-          opacity: 0.9;
-        }
-
-        .location-text {
-          font-size: 20px;
-          margin-bottom: 8px;
+        .subtitle {
+          font-size: 32px;
+          text-transform: capitalize; /* "Let's celebrate" */
+          letter-spacing: 2px;
           font-weight: 500;
+          color: white;
+          /* font-family: 'Pinyon Script', cursive; Inherited from body */
         }
 
-        .courtesy {
-          font-style: italic;
-          font-size: 16px;
-          opacity: 0.8;
+        .script-date {
+            /* font-family: 'Pinyon Script', cursive; Inherited from body */
+            font-size: 80px;
+            color: #D4AF37; /* Gold */
+            margin: 20px 0;
+            font-weight: 400;
+        }
+
+        .date-numeric {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            color: white;
+            /* font-family: 'Pinyon Script', cursive; Inherited from body */
+        }
+        
+        .event-time {
+             font-size: 32px;
+             font-weight: 600;
+             margin-top: 5px;
+             color: white; 
+             /* Inherits Pinyon Script */
+        }
+
+        .footer-location {
+            position: absolute;
+            bottom: -250px; /* Adjust based on flex centering spacing */
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            color: white;
+            /* font-family: 'Pinyon Script', cursive; Inherited from body */
+        }
+        
+        /* Adjust layout spacing */
+        .spacer {
+            height: 50px;
         }
       </style>
     </head>
 
     <body>
-      <div class="card-arch">
-        <img src="${imenaLogo}" class="logo" />
-
-        <h1 class="event-title">
-          <span>${eventDay}</span>
-          <span>Meetup</span>
-        </h1>
-
-        <div class="hosted-by">
-          HOSTED BY ${hostingFamily.toUpperCase()}
+      <div class="overlay"></div>
+      
+      <div class="content">
+        <div class="logo-container">
+            <img src="${eventLogo}" class="logo" alt="Logo" />
         </div>
 
-        <div class="date-section">
-          <div style="display:flex; flex-direction:column; flex:1; align-items:center;">
-            <div class="date-divider"></div>
-            <div class="month-year">${year}</div>
-            <div class="date-divider"></div>
-          </div>
+        <div class="main-title">${hostingFamily}</div>
 
-          <div class="day-big">${day}</div>
-
-          <div style="display:flex; flex-direction:column; flex:1; align-items:center;">
-            <div class="date-divider"></div>
-            <div class="month-year">${month}</div>
-            <div class="date-divider"></div>
-          </div>
+        <div class="subtitle-wrapper">
+            <div class="line"></div>
+            <div class="subtitle">Let's celebrate</div>
+            <div class="line"></div>
         </div>
 
-        <div class="miss-out">Don't miss out</div>
-        <div class="location-text">${location}</div>
-        <div class="courtesy">A courtesy of Imena family</div>
+        <div class="script-date">on ${weekday}</div>
+        
+        <div class="date-numeric">${eventDay}</div>
+        <div class="event-time">${eventDate}</div> <!-- Added eventDate here -->
+
+        <div class="spacer" style="height: 100px;"></div>
+
+        <div class="date-numeric" style="font-size: 28px;">${location}</div>
       </div>
     </body>
     </html>
@@ -486,17 +499,48 @@ function getEventTemplate(data) {
 
 
 app.post("/generate-pdf", async (req, res) => {
+  console.log("Received /generate-pdf request");
   try {
+    console.log("Body:", JSON.stringify(req.body).substring(0, 100) + "...");
     const data = req.body;
     const { templateId } = data;
 
     let html = "";
 
     if (templateId === "birthday") {
-      html = getBirthdayTemplate(data);
+      const publicDir = path.join(__dirname, "public");
+      const birthdayBgBase64 = fs.readFileSync(
+        path.join(publicDir, "background.png"),
+        "base64"
+      );
+      // NOTE: User file name has a space: "birthday logo.png"
+      const birthdayLogoBase64 = fs.readFileSync(
+        path.join(publicDir, "birthday logo.png"),
+        "base64"
+      );
+
+      html = getBirthdayTemplate({
+        ...data,
+        birthdayBg: `data:image/png;base64,${birthdayBgBase64}`,
+        birthdayLogo: `data:image/png;base64,${birthdayLogoBase64}`
+      });
     }
     else if (templateId === "event") {
-      html = getEventTemplate(data);
+      const publicDir = path.join(__dirname, "public");
+      const eventBgBase64 = fs.readFileSync(
+        path.join(publicDir, "event-bg.png"),
+        "base64"
+      );
+      const eventLogoBase64 = fs.readFileSync(
+        path.join(publicDir, "imena-bg.png"),
+        "base64"
+      );
+
+      html = getEventTemplate({
+        ...data,
+        eventBg: `data:image/png;base64,${eventBgBase64}`,
+        eventLogo: `data:image/png;base64,${eventLogoBase64}`
+      });
     }
     else if (templateId === "kwibuka") {
       const publicDir = path.join(__dirname, "public");
@@ -526,14 +570,17 @@ app.post("/generate-pdf", async (req, res) => {
     else {
       return res.status(400).json({ error: "Invalid templateId" });
     }
+
+    console.log("Launching Puppeteer...");
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: "new",
       // executablePath is removed so puppeteer uses its bundled browser
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-
+    console.log("New Page...");
     const page = await browser.newPage();
+    page.setDefaultNavigationTimeout(0);
     await page.setViewport({ width: 794, height: 1123 });
     await page.setContent(html, { waitUntil: "networkidle2", timeout: 0 });
 
@@ -552,8 +599,8 @@ app.post("/generate-pdf", async (req, res) => {
     res.send(pdfBuffer);
 
   } catch (error) {
-    console.error("PDF generation error:", error);
-    res.status(500).json({ error: "Failed to generate PDF" });
+    console.error("PDF generation error DETAILED:", error);
+    res.status(500).json({ error: "Failed to generate PDF", details: error.message, stack: error.stack });
   }
 });
 
