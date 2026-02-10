@@ -590,14 +590,19 @@ app.post("/generate-pdf", async (req, res) => {
 
     console.log("New Page...");
     const page = await browser.newPage();
-    page.setDefaultNavigationTimeout(0);
-    await page.setViewport({ width: 794, height: 1123 });
-    await page.setContent(html, { waitUntil: "networkidle2", timeout: 0 });
 
+    console.log("Setting Viewport...");
+    await page.setViewport({ width: 794, height: 1123 });
+
+    console.log("Setting Content (HTML length:", html.length, ")...");
+    await page.setContent(html, { waitUntil: "load", timeout: 60000 });
+
+    console.log("Generating PDF buffer...");
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
     });
+    console.log("PDF buffer generated:", pdfBuffer.length, "bytes");
 
     await browser.close();
     console.log(`[${new Date().toLocaleString()}] PDF generation complete. Sending response...`);
