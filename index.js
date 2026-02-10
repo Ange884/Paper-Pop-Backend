@@ -9,7 +9,15 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// Enable CORS for all origins and specific methods/headers
+app.use(cors({
+  origin: "https://popit-phi.vercel.app",
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
