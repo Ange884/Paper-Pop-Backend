@@ -502,99 +502,85 @@ function getEventTemplate(data) {
 
 
 
+function getTemplateHtml(templateId, data) {
+  const publicDir = path.join(__dirname, "public");
+
+  if (templateId === "birthday") {
+    const birthdayBgBase64 = fs.readFileSync(
+      path.join(publicDir, "background.png"),
+      "base64"
+    );
+    const birthdayLogoBase64 = fs.readFileSync(
+      path.join(publicDir, "birthday logo.png"),
+      "base64"
+    );
+
+    return getBirthdayTemplate({
+      ...data,
+      birthdayBg: `data:image/png;base64,${birthdayBgBase64}`,
+      birthdayLogo: `data:image/png;base64,${birthdayLogoBase64}`
+    });
+  }
+  else if (templateId === "event") {
+    const eventBgBase64 = fs.readFileSync(
+      path.join(publicDir, "family.JPG"),
+      "base64"
+    );
+    const eventLogoBase64 = fs.readFileSync(
+      path.join(publicDir, "imena-bg.png"),
+      "base64"
+    );
+
+    return getEventTemplate({
+      ...data,
+      eventBg: `data:image/png;base64,${eventBgBase64}`,
+      eventLogo: `data:image/png;base64,${eventLogoBase64}`
+    });
+  }
+  else if (templateId === "kwibuka") {
+    const imenaBase64 = fs.readFileSync(
+      path.join(publicDir, "IMENA.png"),
+      "base64"
+    );
+    const kwibukaBase64 = fs.readFileSync(
+      path.join(publicDir, "kwibuka.png"),
+      "base64"
+    );
+    const kwibukaBgBase64 = fs.readFileSync(
+      path.join(publicDir, "kwibuka-bg.jpeg"),
+      "base64"
+    );
+
+    return getKwibukaTemplate({
+      ...data,
+      imenaLogo: `data:image/png;base64,${imenaBase64}`,
+      kwibukaIcon: `data:image/png;base64,${kwibukaBase64}`,
+      kwibukaBg: `data:image/jpeg;base64,${kwibukaBgBase64}`,
+    });
+  }
+  return null;
+}
+
 app.post("/generate-pdf", async (req, res) => {
   console.log("Received /generate-pdf request");
   try {
-    console.log("Body:", JSON.stringify(req.body).substring(0, 100) + "...");
     const data = req.body;
     const { templateId } = data;
 
-    let html = "";
-
-    if (templateId === "birthday") {
-      const publicDir = path.join(__dirname, "public");
-      const birthdayBgBase64 = fs.readFileSync(
-        path.join(publicDir, "background.png"),
-        "base64"
-      );
-      // NOTE: User file name has a space: "birthday logo.png"
-      const birthdayLogoBase64 = fs.readFileSync(
-        path.join(publicDir, "birthday logo.png"),
-        "base64"
-      );
-
-      html = getBirthdayTemplate({
-        ...data,
-        birthdayBg: `data:image/png;base64,${birthdayBgBase64}`,
-        birthdayLogo: `data:image/png;base64,${birthdayLogoBase64}`
-      });
-    }
-    else if (templateId === "event") {
-      const publicDir = path.join(__dirname, "public");
-      const eventBgBase64 = fs.readFileSync(
-        path.join(publicDir, "event-bg.png"),
-        "base64"
-      );
-      const eventLogoBase64 = fs.readFileSync(
-        path.join(publicDir, "event-logo.png"),
-        "base64"
-      );
-
-      html = getEventTemplate({
-        ...data,
-        eventBg: `data:image/png;base64,${eventBgBase64}`,
-        eventLogo: `data:image/png;base64,${eventLogoBase64}`
-      });
-    }
-    else if (templateId === "kwibuka") {
-      const publicDir = path.join(__dirname, "public");
-
-      const imenaBase64 = fs.readFileSync(
-        path.join(publicDir, "IMENA.png"),
-        "base64"
-      );
-
-      const kwibukaBase64 = fs.readFileSync(
-        path.join(publicDir, "kwibuka.png"),
-        "base64"
-      );
-
-      const kwibukaBgBase64 = fs.readFileSync(
-        path.join(publicDir, "kwibuka-bg.jpeg"),
-        "base64"
-      );
-
-      html = getKwibukaTemplate({
-        ...data,
-        imenaLogo: `data:image/png;base64,${imenaBase64}`,
-        kwibukaIcon: `data:image/png;base64,${kwibukaBase64}`,
-        kwibukaBg: `data:image/jpeg;base64,${kwibukaBgBase64}`,
-      });
-    }
-    else {
+    const html = getTemplateHtml(templateId, data);
+    if (!html) {
       return res.status(400).json({ error: "Invalid templateId" });
     }
 
-    console.log("Launching Puppeteer with args:", ["--no-sandbox", "--disable-setuid-sandbox"]);
-    let browser;
-    try {
-      browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      });
-      console.log("Puppeteer launched successfully");
-    } catch (launchError) {
-      console.error("Puppeteer launch FAILED:", launchError);
-      throw launchError;
-    }
+    console.log("Launching Puppeteer...");
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: process.env.CHROME_PATH || undefined,
+    });
 
-    console.log("New Page...");
     const page = await browser.newPage();
-
-    console.log("Setting Viewport...");
     await page.setViewport({ width: 794, height: 1123 });
-
-    console.log("Setting Content (HTML length:", html.length, ")...");
     await page.setContent(html, { waitUntil: "load", timeout: 60000 });
 
     console.log("Generating PDF buffer...");
@@ -602,14 +588,9 @@ app.post("/generate-pdf", async (req, res) => {
       format: "A4",
       printBackground: true,
     });
-    console.log("PDF buffer generated:", pdfBuffer.length, "bytes");
 
     await browser.close();
-    console.log(`[${new Date().toLocaleString()}] PDF generation complete. Sending response...`);
-
-    // Headers are now handled by cors middleware correctly
     res.header("Content-Type", "application/json");
-
     const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
 
     return res.status(200).json({
@@ -617,10 +598,51 @@ app.post("/generate-pdf", async (req, res) => {
       pdfBase64: pdfBase64,
       filename: `${templateId}-invitation.pdf`
     });
-
   } catch (error) {
-    console.error("PDF generation error DETAILED:", error);
-    res.status(500).json({ error: "Failed to generate PDF", details: error.message, stack: error.stack });
+    console.error("PDF generation error:", error);
+    res.status(500).json({ error: "Failed to generate PDF", details: error.message });
+  }
+});
+
+app.post("/generate-image", async (req, res) => {
+  console.log("Received /generate-image request");
+  try {
+    const data = req.body;
+    const { templateId } = data;
+
+    const html = getTemplateHtml(templateId, data);
+    if (!html) {
+      return res.status(400).json({ error: "Invalid templateId" });
+    }
+
+    console.log("Launching Puppeteer for image...");
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    // A4 aspect ratio at 96 DPI is approx 794x1123
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+    await page.setContent(html, { waitUntil: "load", timeout: 60000 });
+
+    console.log("Generating screenshot...");
+    const imageBuffer = await page.screenshot({
+      type: "png",
+      fullPage: false,
+    });
+
+    await browser.close();
+    const imageBase64 = Buffer.from(imageBuffer).toString("base64");
+
+    return res.status(200).json({
+      success: true,
+      imageBase64: imageBase64,
+      filename: `${templateId}-invitation.png`
+    });
+  } catch (error) {
+    console.error("Image generation error:", error);
+    res.status(500).json({ error: "Failed to generate image", details: error.message });
   }
 });
 
