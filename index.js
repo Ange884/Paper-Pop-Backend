@@ -9,9 +9,7 @@ dotenv.config();
 
 const app = express();
 
-// Enable CORS with proper preflight handling
 app.use(cors());
-// app.options('*', cors()); // Crashes Express 5, use app.use(cors()) instead
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
@@ -557,6 +555,7 @@ function getTemplateHtml(templateId, data) {
 
 app.post("/generate-pdf", async (req, res) => {
   console.log("Received /generate-pdf request");
+  let browser;
   try {
     const data = req.body;
     const { templateId } = data;
@@ -567,15 +566,25 @@ app.post("/generate-pdf", async (req, res) => {
     }
 
     console.log("Launching Puppeteer...");
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-zygote",
+        "--single-process",
+      ],
       executablePath: process.env.CHROME_PATH || undefined,
     });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123 });
-    await page.setContent(html, { waitUntil: "load", timeout: 60000 });
+    await page.setContent(html, {
+      waitUntil: ["load", "networkidle0"],
+      timeout: 30000
+    });
 
     console.log("Generating PDF buffer...");
     const pdfBuffer = await page.pdf({
@@ -583,7 +592,6 @@ app.post("/generate-pdf", async (req, res) => {
       printBackground: true,
     });
 
-    await browser.close();
     res.header("Content-Type", "application/json");
     const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
 
@@ -595,11 +603,17 @@ app.post("/generate-pdf", async (req, res) => {
   } catch (error) {
     console.error("PDF generation error:", error);
     res.status(500).json({ error: "Failed to generate PDF", details: error.message });
+  } finally {
+    if (browser) {
+      console.log("Closing browser...");
+      await browser.close();
+    }
   }
 });
 
 app.post("/generate-image", async (req, res) => {
   console.log("Received /generate-image request");
+  let browser;
   try {
     const data = req.body;
     const { templateId } = data;
@@ -610,16 +624,23 @@ app.post("/generate-image", async (req, res) => {
     }
 
     console.log("Launching Puppeteer for image...");
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
       executablePath: process.env.CHROME_PATH || undefined,
     });
 
     const page = await browser.newPage();
-    // A4 aspect ratio at 96 DPI is approx 794x1123
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: "load", timeout: 60000 });
+    await page.setContent(html, {
+      waitUntil: ["load", "networkidle0"],
+      timeout: 30000
+    });
 
     console.log("Generating screenshot...");
     const imageBuffer = await page.screenshot({
@@ -627,7 +648,6 @@ app.post("/generate-image", async (req, res) => {
       fullPage: false,
     });
 
-    await browser.close();
     const imageBase64 = Buffer.from(imageBuffer).toString("base64");
 
     return res.status(200).json({
@@ -638,6 +658,11 @@ app.post("/generate-image", async (req, res) => {
   } catch (error) {
     console.error("Image generation error:", error);
     res.status(500).json({ error: "Failed to generate image", details: error.message });
+  } finally {
+    if (browser) {
+      console.log("Closing browser...");
+      await browser.close();
+    }
   }
 });
 
