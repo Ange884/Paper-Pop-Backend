@@ -9,7 +9,9 @@ dotenv.config();
 
 const app = express();
 
+// Enable CORS with proper preflight handling
 app.use(cors());
+app.options('*', cors());
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
@@ -363,15 +365,15 @@ function getEventTemplate(data) {
           color: white;
         }
 
-        // .overlay {
-        //   position: absolute;
-        //   top: 0;
-        //   left: 0;
-        //   right: 0;
-        //   bottom: 0;
-        //   background: rgba(0, 0, 0, 0.65);
-        //   z-index: 1;
-        // }
+        /* .overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.65);
+          z-index: 1;
+        } */
 
         .content {
           z-index: 2;
@@ -502,18 +504,25 @@ function getEventTemplate(data) {
 
 
 
+function getSafeBase64(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, "base64");
+    }
+    console.error(`File not found: ${filePath}`);
+    return "";
+  } catch (err) {
+    console.error(`Error reading ${filePath}:`, err);
+    return "";
+  }
+}
+
 function getTemplateHtml(templateId, data) {
   const publicDir = path.join(__dirname, "public");
 
   if (templateId === "birthday") {
-    const birthdayBgBase64 = fs.readFileSync(
-      path.join(publicDir, "background.png"),
-      "base64"
-    );
-    const birthdayLogoBase64 = fs.readFileSync(
-      path.join(publicDir, "birthday logo.png"),
-      "base64"
-    );
+    const birthdayBgBase64 = getSafeBase64(path.join(publicDir, "background.png"));
+    const birthdayLogoBase64 = getSafeBase64(path.join(publicDir, "birthday logo.png"));
 
     return getBirthdayTemplate({
       ...data,
@@ -522,14 +531,8 @@ function getTemplateHtml(templateId, data) {
     });
   }
   else if (templateId === "event") {
-    const eventBgBase64 = fs.readFileSync(
-      path.join(publicDir, "family.JPG"),
-      "base64"
-    );
-    const eventLogoBase64 = fs.readFileSync(
-      path.join(publicDir, "imena-bg.png"),
-      "base64"
-    );
+    const eventBgBase64 = getSafeBase64(path.join(publicDir, "family.JPG"));
+    const eventLogoBase64 = getSafeBase64(path.join(publicDir, "imena-bg.png"));
 
     return getEventTemplate({
       ...data,
@@ -538,18 +541,9 @@ function getTemplateHtml(templateId, data) {
     });
   }
   else if (templateId === "kwibuka") {
-    const imenaBase64 = fs.readFileSync(
-      path.join(publicDir, "IMENA.png"),
-      "base64"
-    );
-    const kwibukaBase64 = fs.readFileSync(
-      path.join(publicDir, "kwibuka.png"),
-      "base64"
-    );
-    const kwibukaBgBase64 = fs.readFileSync(
-      path.join(publicDir, "kwibuka-bg.jpeg"),
-      "base64"
-    );
+    const imenaBase64 = getSafeBase64(path.join(publicDir, "IMENA.png"));
+    const kwibukaBase64 = getSafeBase64(path.join(publicDir, "kwibuka.png"));
+    const kwibukaBgBase64 = getSafeBase64(path.join(publicDir, "kwibuka-bg.jpeg"));
 
     return getKwibukaTemplate({
       ...data,
@@ -619,6 +613,7 @@ app.post("/generate-image", async (req, res) => {
     const browser = await puppeteer.launch({
       headless: "new",
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: process.env.CHROME_PATH || undefined,
     });
 
     const page = await browser.newPage();
@@ -646,6 +641,7 @@ app.post("/generate-image", async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
