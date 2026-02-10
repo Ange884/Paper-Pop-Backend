@@ -9,20 +9,15 @@ dotenv.config();
 
 const app = express();
 
+app.use(cors());
+
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  // Set headers for all responses
-  res.setHeader("Access-Control-Allow-Origin", origin || "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-
-  console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${origin || "No Origin"}`);
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
   next();
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -580,12 +575,18 @@ app.post("/generate-pdf", async (req, res) => {
       return res.status(400).json({ error: "Invalid templateId" });
     }
 
-    console.log("Launching Puppeteer...");
-    const browser = await puppeteer.launch({
-      headless: "new",
-      // executablePath is removed so puppeteer uses its bundled browser
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    console.log("Launching Puppeteer with args:", ["--no-sandbox", "--disable-setuid-sandbox"]);
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+      console.log("Puppeteer launched successfully");
+    } catch (launchError) {
+      console.error("Puppeteer launch FAILED:", launchError);
+      throw launchError;
+    }
 
     console.log("New Page...");
     const page = await browser.newPage();
@@ -601,8 +602,7 @@ app.post("/generate-pdf", async (req, res) => {
     await browser.close();
     console.log(`[${new Date().toLocaleString()}] PDF generation complete. Sending response...`);
 
-    // Send as JSON with Base64 to bypass IDM interception
-    res.header("Access-Control-Allow-Origin", origin || "*");
+    // Headers are now handled by cors middleware correctly
     res.header("Content-Type", "application/json");
 
     const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
