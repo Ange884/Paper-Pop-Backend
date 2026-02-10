@@ -11,7 +11,7 @@ const app = express();
 
 // Enable CORS with proper preflight handling
 app.use(cors());
-app.options('*', cors());
+// app.options('*', cors()); // Crashes Express 5, use app.use(cors()) instead
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
