@@ -582,8 +582,8 @@ app.post("/generate-pdf", async (req, res) => {
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123 });
     await page.setContent(html, {
-      waitUntil: ["load", "networkidle0"],
-      timeout: 30000
+      waitUntil: "load",
+      timeout: 60000
     });
 
     console.log("Generating PDF buffer...");
@@ -638,8 +638,8 @@ app.post("/generate-image", async (req, res) => {
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
     await page.setContent(html, {
-      waitUntil: ["load", "networkidle0"],
-      timeout: 30000
+      waitUntil: "load",
+      timeout: 60000
     });
 
     console.log("Generating screenshot...");
