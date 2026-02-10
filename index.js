@@ -9,15 +9,7 @@ dotenv.config();
 
 const app = express();
 
-// Enable CORS for all origins and specific methods/headers
-app.use(cors({
-  origin: "https://popit-phi.vercel.app",
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
-// Handle preflight requests
-app.options('*', cors());
+app.use(cors());
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toLocaleString()}] ${req.method} to ${req.path} from ${req.headers.origin || "No Origin"}`);
@@ -371,15 +363,15 @@ function getEventTemplate(data) {
           color: white;
         }
 
-        .overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.65);
-          z-index: 1;
-        }
+        // .overlay {
+        //   position: absolute;
+        //   top: 0;
+        //   left: 0;
+        //   right: 0;
+        //   bottom: 0;
+        //   background: rgba(0, 0, 0, 0.65);
+        //   z-index: 1;
+        // }
 
         .content {
           z-index: 2;
