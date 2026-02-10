@@ -541,7 +541,7 @@ app.post("/generate-pdf", async (req, res) => {
         "base64"
       );
       const eventLogoBase64 = fs.readFileSync(
-        path.join(publicDir, "imena-bg.png"),
+        path.join(publicDir, "event-logo.png"),
         "base64"
       );
 

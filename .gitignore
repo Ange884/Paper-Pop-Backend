@@ -1,2 +1,8 @@
-/node_modules
+# Node modules
+node_modules/
+
+# Environment files
 .env
+
+# Puppeteer cache / Chromium
+.cache/
